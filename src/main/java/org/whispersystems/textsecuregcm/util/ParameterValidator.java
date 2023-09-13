@@ -24,11 +24,11 @@ public class ParameterValidator {
     }
 
     public static boolean validateName(String input) {
-        return true;
+        return !hasControlCharacter(input)  ;
     }
 
     public static boolean validateSignature(String input) {
-        return patternSignature.matcher(input).matches();
+        return patternSignature.matcher(input).matches() && !hasControlCharacter(input);
     }
 
     public static boolean validateTimeZone(String input) {
@@ -120,5 +120,19 @@ public class ParameterValidator {
 
     public static boolean validateOauthScope(String scope) {
         return patternOauthScope.matcher(scope).matches();
+    }
+
+
+    public static boolean hasControlCharacter(String s) {
+        if (s == null) {
+            return false;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            final int type = Character.getType(s.charAt(i));
+            if ( type == Character.UNASSIGNED || type >= Character.CONTROL && type <= Character.SURROGATE) {
+                return true;
+            }
+        }
+        return false;
     }
 }
