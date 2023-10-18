@@ -1,0 +1,67 @@
+/**
+ * Copyright (C) 2014 Open Whisper Systems
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package textsecure;
+
+option java_package = "org.whispersystems.textsecuregcm.storage";
+option java_outer_classname = "PubSubProtos";
+
+message PubSubMessage {
+  enum Type {
+    UNKNOWN   = 0;
+    QUERY_DB  = 1;
+    DELIVER   = 2;
+    KEEPALIVE = 3;
+    CLOSE     = 4;
+    CONNECTED = 5;
+  }
+
+  optional Type  type    = 1;
+  optional bytes content = 2;
+  optional bool notify=3;
+  optional Notification notification=4;
+  optional bool readReceipt=5;
+  optional uint64 msgId=6;
+  optional Conversation conversation=7;
+  optional RealSource realSource=8;
+}
+
+message Notification {
+  optional int32 type=1;
+  optional Args args=2;
+}
+
+message Conversation {
+  optional string number=1;
+  optional string gid=2;
+}
+
+message Args {
+  optional string gid=1;
+  optional string gname=2;
+  optional string passthrough=3;
+  repeated string  mentionedPersons=4;
+  optional string collapseId=5;
+}
+
+message RealSource {
+  optional string source=1;
+  optional uint64 sourceDevice     = 2;
+  optional uint64 timestamp     = 3;
+  optional uint64 serverTimestamp     = 4;
+  optional uint64 sequenceId     = 5;
+  optional uint64 notifySequenceId     = 6;
+}

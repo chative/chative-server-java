@@ -1,0 +1,19 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.auth";
+
+import "common.proto";
+
+message AuthorizationCreateTokenResponse {
+  required string token = 1;
+}
+
+message AuthorizationVerifyTokenRequest {
+  required string token = 1;
+}
+
+service AuthorizationService {
+  rpc createToken(Empty) returns (BaseResponse);
+  rpc verifyToken(AuthorizationVerifyTokenRequest) returns (BaseResponse);
+}

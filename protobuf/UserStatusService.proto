@@ -1,0 +1,19 @@
+syntax = "proto2";
+package userstatus;
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.status";
+
+import "common.proto";
+
+message UserStatusResponse {
+  required bool isDND = 1;
+}
+
+message UserStatusRequest {
+  required string number = 1;
+}
+
+service UserStatusService {
+  rpc isDND(UserStatusRequest) returns (BaseResponse);
+}

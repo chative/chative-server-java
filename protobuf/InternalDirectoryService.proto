@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.directory";
+
+import "common.proto";
+
+message DirectorySendNotifyRequest {
+  repeated string uids =1;
+  repeated string teams =2;
+  optional bool all =3;
+}
+
+service InternalDirectoryService {
+  rpc sendGetContactsMsg(DirectorySendNotifyRequest) returns (BaseResponse);
+  rpc fixMeetingVersion(Empty) returns(BaseResponse);
+}

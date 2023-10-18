@@ -1,0 +1,28 @@
+package textsecure;
+
+option java_package = "org.whispersystems.textsecuregcm.entities";
+option java_outer_classname = "ConversationPreviews";
+import "TextSecure.proto";
+
+message ConversationPreview {
+  optional ConversationId  conversationId  = 1;
+  optional ReadPosition    readPosition    = 2;
+  optional uint32          unreadCorrection = 3;
+  optional Envelope        lastestMsg      = 4;
+  repeated Envelope        onePageMsgs     = 5;
+  optional uint64          lastestMsgNsId   = 6;
+  optional uint64          maxOutgoingNsId  =7;
+}
+
+message ConversationId{
+  optional string  number  = 1; // 1v1 会话，对方号码
+  optional bytes   groupId = 2; // 群组，群组id,
+}
+
+message ReadPosition{
+  optional string  groupId  = 1;
+  optional uint64  readAt   = 2;
+  optional uint64  maxServerTime   = 3;
+  optional uint64  maxNotifySequenceId   = 4;
+  optional uint64  maxSequenceId   = 5;
+}

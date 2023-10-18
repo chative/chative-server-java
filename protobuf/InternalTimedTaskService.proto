@@ -1,0 +1,52 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.timedtask";
+
+import "common.proto";
+
+message ExpiredMsgRequest {
+  required int32 messageExpireThreshold = 1;
+  optional string sourceRegex=2;
+}
+
+message GroupRemindRequest {
+  required string remindCycle = 1;
+}
+
+message InactiveRequest {
+  optional bool isExecute = 1;
+  required int32 accountExpireThreshold = 2;
+}
+
+message InactiveRemindRequest {
+  repeated int32 remindThresholds = 1;
+  optional string emailSubject =2;
+  optional string emailTemplatate = 3;
+}
+
+message NotifyRequest {
+  required int32 notifyCountThreshold = 1;
+}
+
+service InternalTimedTaskService {
+//  * 清理通知消息：30天以上
+  rpc clearExpiredMsg(Empty) returns (BaseResponse);
+  //  * 清理通知消息：30天以上
+  rpc clearExpiredMsgForRequest(ExpiredMsgRequest) returns (BaseResponse);
+//  * 次设备relink：30天以上未活跃
+//  rpc clearInactiveDevices(Empty) returns (BaseResponse);
+//  * groups过期: 30天以上没有活动
+  rpc clearInactiveGroups(Empty) returns (BaseResponse);
+//  * 未接收消息邮件提醒
+  rpc messageNotReceivedRemind(Empty) returns (BaseResponse);
+  //  * 非活跃用户邮件提醒
+  rpc inactiveAccountRemind(InactiveRemindRequest) returns (BaseResponse);
+//   * 隐藏不活跃用户
+  rpc hiddenNotActiveAccount(InactiveRequest) returns (BaseResponse);
+
+  // * 群周期性提醒
+  rpc groupCycleRemind(GroupRemindRequest) returns (BaseResponse);
+
+  rpc notifyMerge(NotifyRequest) returns (BaseResponse);
+}

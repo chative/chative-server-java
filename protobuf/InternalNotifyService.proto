@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.notify";
+
+import "common.proto";
+
+
+message NotifySendRequest {
+  required string content = 1;
+  map<string, string> notifications = 2;
+  optional string defaultNotification=3;
+  repeated string uids =4;
+  repeated string gids =5;
+}
+
+
+service InternalNotifyService {
+  rpc sendNotify(NotifySendRequest) returns (BaseResponse);
+}

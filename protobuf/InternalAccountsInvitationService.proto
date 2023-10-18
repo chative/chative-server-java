@@ -1,0 +1,62 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.invitation";
+
+import "common.proto";
+
+message InvitationResponse {
+  message InvitationInfo {
+    required string code = 1;
+    optional string inviter = 2;
+    optional uint64 registerTime = 3;
+    optional string account = 4;
+    optional string email = 5;
+    optional string name = 6;
+    optional string oktaId = 7;
+    optional string orgs = 8;
+    optional string backup1 = 9;
+    optional string backup2 = 10;
+    optional uint64 timestamp = 11;
+  }
+  repeated InvitationInfo invitationInfo = 1;
+  optional uint64 total = 2;
+}
+
+message InvitationRequest {
+  required Step step = 1;
+  optional InvitationUpdateRequest invitation = 2;
+}
+
+message InvitationUpdateRequest {
+  optional string code = 1;
+  optional string orgs = 2;
+  optional string name = 3;
+  optional string number = 4;
+  optional string account = 5;
+  optional string oktaId = 6;
+  optional string inviter = 7;
+  optional string email = 8;
+}
+
+message GenerateInvitationCode {
+  optional string email = 1;
+  optional string inviter = 2;
+  optional string name = 3;
+  optional string number = 4;
+  optional string account = 5;
+  optional string oktaId = 6;
+  optional string orgs = 7;
+  optional string backup1 = 8;
+  optional string oktaOrg = 9;
+}
+
+message GenerateInvitationCodeRes {
+  required string code = 1;
+}
+service InternalAccountsInvitationService {
+  rpc getAll(InvitationRequest) returns (InvitationResponse);
+  rpc generateInvitationCode(GenerateInvitationCode) returns (BaseResponse);
+  rpc update(InvitationUpdateRequest) returns (BaseResponse);
+  rpc updateInvitationByEmail(InvitationUpdateRequest) returns (BaseResponse);
+}

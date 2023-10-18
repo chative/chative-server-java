@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.difft.factory.EnforcerConfig,\
+org.difft.factory.EnforcerFactory

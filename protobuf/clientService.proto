@@ -1,0 +1,45 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.clients";
+
+import "common.proto";
+
+message ClientVersionResponse{
+  message ClientVersionCnt{
+    required string version = 1;
+    required uint32 cnt = 2;
+  }
+
+  message ClientVersionCntWithOS{
+    optional string os = 1;
+    repeated ClientVersionCnt Versions = 2;
+  }
+  repeated ClientVersionCntWithOS osVersions = 1;
+}
+
+message ClientVersionRequest {
+  message OSVersion {
+    required string os = 1;
+    required string minVersion = 2;
+  }
+  repeated OSVersion osVersions = 1;
+}
+
+message ClientQueryRequest {
+  required string uid = 1;
+  required string deviceId = 2;
+}
+
+message ClientInfoResponse{
+  optional string os = 1;
+  optional string version = 2;
+  optional string ua = 3;
+}
+
+service ClientsService {
+    rpc getVersionInfo(Empty) returns (ClientVersionResponse);
+    rpc getVersionInfoByVer(ClientVersionRequest) returns (ClientVersionResponse);
+    rpc getVersionInfoByUid(ClientQueryRequest) returns (ClientInfoResponse);
+}
+

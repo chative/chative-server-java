@@ -1,0 +1,74 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.teams";
+
+import "common.proto";
+
+message MemberInfo {
+  required string uid = 1;
+  required string name = 2;
+
+}
+
+message GetRequest {
+  repeated string teams = 1;
+  optional string appid = 2;
+  optional string pid =3;
+}
+
+message GetResponse {
+  message TeamInfo {
+    required string name = 1;
+    required uint64 id = 2;
+    optional uint64 parentId = 3;
+    optional bool status = 4;
+    optional uint32 orderNum = 5;
+    optional uint64 createTime = 6;
+    repeated MemberInfo members = 7;
+    optional string appid = 8;
+    optional string pid = 9;
+    optional string remark = 10;
+  }
+
+  repeated TeamInfo teams = 1;
+}
+
+message CreateOrUpdateRequest {
+  required string name = 1;
+  optional uint64 id = 2;
+  optional uint64 parentId = 3;
+  optional string ancestors = 4;
+  optional bool status = 5;
+  optional uint32 orderNum = 6;
+  optional string appid = 7;
+  optional string pid = 8;
+  optional string domain = 9;
+  optional string remark = 10;
+}
+
+message JoinLeaveRequest {
+  message JoinLeaveInfo {
+    required string team = 1;
+    required string uid = 2;
+  }
+
+  repeated JoinLeaveInfo joinleaves = 1;
+  optional string appid = 2;
+  optional string pid =3;
+}
+
+message GetTreeRequest {
+  optional string name = 1;
+  repeated bool status = 2;
+}
+
+service InternalTeamsService {
+  rpc get(GetRequest) returns (GetResponse);
+  rpc getAll(Step) returns (GetResponse);
+  rpc join(JoinLeaveRequest) returns (BaseResponse);
+  rpc leave(JoinLeaveRequest) returns (BaseResponse);
+  rpc getTree(GetTreeRequest) returns (GetResponse);
+  rpc createOrUpdate(CreateOrUpdateRequest) returns (BaseResponse);
+  rpc delete(GetRequest) returns (BaseResponse);
+}

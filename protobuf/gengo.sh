@@ -1,0 +1,2 @@
+# protoc -I. --go_out=./proto --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --go_opt=Mcommon.proto=/proto --go_opt=MInternalAccountsService.proto=/proto --go-grpc_opt=Mcommon.proto=/proto --go-grpc_opt=MInternalAccountsService.proto=/proto ./InternalAccountsService.proto
+protoc --go_out=./proto --go_opt=paths=source_relative --go-grpc_out=./proto --go-grpc_opt=paths=source_relative ./common.proto ./InternalAccountsService.proto

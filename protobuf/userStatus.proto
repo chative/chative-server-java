@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+option go_package = "/proto";
+option java_package = "org.whispersystems.textsecuregcm.entities";
+
+message UserStatusResponse {
+  required bool inMeeting = 1;
+}
+
+message UserStatusRequest {
+  required string uid = 1;
+}
+
+service UserStatus {
+  rpc GetUserStatus(UserStatusRequest) returns (UserStatusResponse) {}
+}
+

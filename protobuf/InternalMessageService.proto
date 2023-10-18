@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "org.whispersystems.textsecuregcm.internal.message";
+
+import "common.proto";
+
+
+message MsgCountResponse {
+  required uint64 count = 1;
+}
+
+
+service InternalMessageService {
+  rpc getMsgCount(Empty) returns (MsgCountResponse);
+  rpc getMsgCountByEstimate(Empty) returns (MsgCountResponse);
+}

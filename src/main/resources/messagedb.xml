@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd">
+
+    <changeSet id="1" author="moxie">
+        <createTable tableName="messages">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="type" type="tinyint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="relay" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="timestamp" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="source" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="source_device" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="destination" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="destination_device" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="message" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="messages" indexName="destination_index">
+            <column name="destination"></column>
+            <column name="destination_device"></column>
+        </createIndex>
+
+        <createIndex tableName="messages" indexName="destination_and_type_index">
+            <column name="destination"></column>
+            <column name="destination_device"></column>
+            <column name="type"></column>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2" author="moxie">
+        <addColumn tableName="messages">
+            <column name="content" type="bytea"/>
+        </addColumn>
+
+        <dropNotNullConstraint tableName="messages" columnName="message"/>
+    </changeSet>
+
+    <changeSet id="3" author="moxie">
+        <sql>CREATE RULE bounded_message_queue AS ON INSERT TO messages DO ALSO DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE destination = NEW.destination AND destination_device = NEW.destination_device ORDER BY timestamp DESC OFFSET 5000);</sql>
+    </changeSet>
+
+    <changeSet id="4" author="moxie">
+        <sql>DROP RULE bounded_message_queue ON messages;</sql>
+        <sql>CREATE RULE bounded_message_queue AS ON INSERT TO messages DO ALSO DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE destination = NEW.destination AND destination_device = NEW.destination_device ORDER BY timestamp DESC OFFSET 1000);</sql>
+    </changeSet>
+
+    <changeSet id="5" author="Johny">
+        <addColumn tableName="messages">
+            <column name="notify" type="bool" defaultValue="false"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="6" author="Johny">
+        <addColumn tableName="messages">
+            <column name="receive_type" type="int" defaultValue="0"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="7" author="Johny">
+        <sql>DROP RULE bounded_message_queue ON messages;</sql>
+        <sql>CREATE RULE bounded_message_queue AS ON INSERT TO messages DO ALSO DELETE FROM messages WHERE id IN (SELECT id FROM messages WHERE destination = NEW.destination AND destination_device = NEW.destination_device ORDER BY timestamp DESC OFFSET 3000);</sql>
+    </changeSet>
+
+    <changeSet id="8" author="Johny">
+        <sql>DROP RULE bounded_message_queue ON messages;</sql>
+    </changeSet>
+    <changeSet id="9" author="Johny">
+        <addColumn tableName="messages">
+            <column name="priority" type="int" defaultValue="100"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="10" author="Johny">
+        <addColumn tableName="messages">
+            <column name="system_show_timestamp" type="bigint">
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="11" author="Johny">
+        <addColumn tableName="messages">
+            <column name="sequence_id" type="bigint">
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="12" author="Johny">
+        <addColumn tableName="messages">
+            <column name="notify_sequence_id" type="bigint">
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="13" author="Johny">
+        <addColumn tableName="messages">
+            <column name="conversation" type="text">
+            </column>
+        </addColumn>
+    </changeSet>
+    <!--
+    <changeSet id="14" author="Johny">
+        <addColumn tableName="messages">
+            <column name="is_recall" type="text">
+            </column>
+        </addColumn>
+    </changeSet>
+    -->
+    <changeSet id="15" author="Johny">
+        <addColumn tableName="messages">
+            <column name="msg_type" type="int">
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="16" author="Johny">
+        <createTable tableName="push_conversations">
+            <column name="id" type="text" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="destination" type="text"/>
+            <column name="destination_device" type="integer"/>
+            <column name="conversation" type="text"/>
+            <column name="push_type" type="int"/>
+            <column name="priority" type="int"/>
+            <column name="max_read_nid" type="bigint" />
+            <column name="last_self_nid" type="bigint" />
+            <column name="is_send" type="boolean" />
+            <column name="last_msg_id" type="bigint" />
+            <column name="last_visible_msg_id" type="bigint" />
+            <column name="last_visible_msg_sid" type="bigint" />
+            <column name="last_visible_msg_nid" type="bigint" />
+        </createTable>
+        <createIndex tableName="push_conversations" indexName="push_conversations_destination_index">
+            <column name="destination"/>
+            <column name="destination_device"/>
+            <column name="conversation"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="17" author="Johny">
+        <createTable tableName="recall_msg_infos">
+            <column name="id" type="bigint" autoIncrement="true" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="conversation" type="text"/>
+            <column name="msg_sequence_id" type="bigint" />
+            <column name="msg_notify_sequence_id" type="bigint" />
+            <column name="source_sequence_id" type="bigint" />
+            <column name="source_notify_sequence_id" type="bigint" />
+        </createTable>
+        <createIndex tableName="recall_msg_infos" indexName="recall_msg_conversation_index">
+            <column name="conversation"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="18" author="Johny">
+        <addColumn tableName="messages">
+            <column name="notify_msg_type" type="int" defaultValue="-1">
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="19" author="Johny">
+        <createIndex indexName="idx_messages_msgType_notifyMsgType" tableName="messages">
+            <column name="msg_type"/>
+            <column name="notify_msg_type"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="20" author="Johny">
+        <addColumn tableName="push_conversations">
+            <column name="last_shard_msg_id" type="bigint" />
+        </addColumn>
+        <addColumn tableName="push_conversations">
+            <column name="last_shard_msg_server_time" type="bigint" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="21" author="Johny">
+        <createTable tableName="conversation_msgs">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="conversation" type="text"/>
+            <column name="push_type" type="int"/>
+            <column name="priority" type="int"/>
+            <column name="last_msg_id" type="bigint" />
+            <column name="last_msg_server_time" type="bigint" />
+            <column name="last_visible_msg_id" type="bigint" />
+            <column name="last_visible_msg_sid" type="bigint" />
+            <column name="last_visible_msg_nid" type="bigint" />
+            <column name="last_visible_msg_server_time" type="bigint" />
+        </createTable>
+        <createIndex tableName="conversation_msgs" indexName="conversation_msgs_conversation_index">
+            <column name="conversation"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="22" author="Johny">
+        <addColumn tableName="conversation_msgs">
+            <column name="last_msg_sid" type="bigint" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="23" author="ian">
+        <addColumn tableName="messages">
+            <column name="source_ik" type="text"/>
+            <column name="peer_context" type="text"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

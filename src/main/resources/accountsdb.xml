@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-2.0.xsd"
+        logicalFilePath="migrations.xml">
+
+    <changeSet id="1" author="moxie">
+        <createTable tableName="accounts">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="number" type="varchar(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+
+            <column name="auth_token" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="salt" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="signaling_key" type="varchar(255)"/>
+
+            <column name="gcm_id" type="text"/>
+
+            <column name="apn_id" type="text"/>
+
+            <column name="supports_sms" type="smallint" defaultValue="0"/>
+        </createTable>
+
+        <createTable tableName="pending_accounts">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="number" type="varchar(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+
+            <column name="verification_code" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="keys">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="number" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="key_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="public_key" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="identity_key" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="last_resort" type="smallint" defaultValue="0"/>
+        </createTable>
+
+        <createIndex tableName="keys" indexName="keys_number_index">
+            <column name="number"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2" author="matt">
+
+        <addColumn tableName="accounts">
+            <column name="data" type="json" />
+        </addColumn>
+
+        <sql>CREATE type device_t AS (id integer, "authToken" varchar(255), salt varchar(255), "signalingKey" varchar(255), "gcmId" text, "apnId" text);</sql>
+        <sql>CREATE type account_t AS (number varchar(255), "supportsSms" smallint, devices device_t array);</sql>
+        <sql>UPDATE accounts SET data = row_to_json(row(number, supports_sms, array[row(1, auth_token, salt, signaling_key, gcm_id, apn_id)::device_t])::account_t)</sql>
+
+        <addNotNullConstraint tableName="accounts" columnName="data"/>
+
+        <dropColumn tableName="accounts" columnName="auth_token"/>
+        <dropColumn tableName="accounts" columnName="salt"/>
+        <dropColumn tableName="accounts" columnName="signaling_key"/>
+        <dropColumn tableName="accounts" columnName="gcm_id"/>
+        <dropColumn tableName="accounts" columnName="apn_id"/>
+        <dropColumn tableName="accounts" columnName="supports_sms"/>
+
+        <sql>DROP type account_t;</sql>
+        <sql>DROP type device_t;</sql>
+
+        <addColumn tableName="keys">
+            <column name="device_id" type="bigint" defaultValue="1">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+
+        <createTable tableName="pending_devices">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="number" type="text">
+                <constraints unique="true" nullable="false"/>
+            </column>
+
+            <column name="verification_code" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="messages">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="account_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="device_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="encrypted_message" type="text">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="messages" indexName="messages_account_and_device">
+            <column name="account_id"/>
+            <column name="device_id"/>
+        </createIndex>
+
+    </changeSet>
+
+    <changeSet id="3" author="moxie">
+        <sql>CREATE OR REPLACE FUNCTION "custom_json_object_set_key"(
+            "json"          json,
+            "key_to_set"    TEXT,
+            "value_to_set"  anyelement
+            )
+            RETURNS json
+            LANGUAGE sql
+            IMMUTABLE
+            STRICT
+            AS $function$
+            SELECT COALESCE(
+            (SELECT ('{' || string_agg(to_json("key") || ':' || "value", ',') || '}')
+            FROM (SELECT *
+            FROM json_each("json")
+            WHERE "key" &lt;&gt; "key_to_set"
+            UNION ALL
+            SELECT "key_to_set", to_json("value_to_set")) AS "fields"),
+            '{}'
+            )::json
+            $function$;</sql>
+        <sql>UPDATE accounts SET data = custom_json_object_set_key(data, 'identityKey', k.identity_key) FROM keys k WHERE (data->>'identityKey')::text is null AND k.number = data->>'number' AND k.last_resort = 1;</sql>
+        <sql>UPDATE accounts SET data = custom_json_object_set_key(data, 'identityKey', k.identity_key) FROM keys k WHERE (data->>'identityKey')::text is null AND k.number = data->>'number';</sql>
+    </changeSet>
+
+    <changeSet id="4" author="moxie">
+        <dropColumn tableName="keys" columnName="identity_key"/>
+    </changeSet>
+
+    <changeSet id="5" author="moxie">
+        <addColumn tableName="pending_accounts">
+            <column name="timestamp" type="bigint" defaultValueComputed="extract(epoch from now()) * 1000">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="pending_devices">
+            <column name="timestamp" type="bigint" defaultValueComputed="extract(epoch from now()) * 1000">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="6" author="cong">
+        <createTable tableName="internal_accounts">
+            <column name="number" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="name" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="push_type" type="text" defaultValue=""/>
+
+            <column name="push_token" type="text" defaultValue=""/>
+
+            <column name="vcode" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="registered" type="bool" defaultValue="false" />
+        </createTable>
+
+        <createTable tableName="internal_groups">
+            <column name="name" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="internal_groups_accounts">
+            <column name="group_name" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="account_number" type="text">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="7" author="cong">
+        <createTable tableName="internal_accounts_invitation">
+            <column name="code" type="text">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="inviter" type="text">
+            </column>
+
+            <column name="timestamp" type="bigint" defaultValueComputed="extract(epoch from now()) * 1000">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="register_time" type="bigint" defaultValue="0">
+                <constraints nullable="false" />
+            </column>
+
+            <column name="account" type="text">
+            </column>
+
+            <column name="name" type="text" defaultValue="">
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="8" author="cong">
+        <addColumn tableName="internal_accounts">
+            <column name="invitation_per_day" type="int" defaultValue="0" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="9" author="cong">
+        <addColumn tableName="internal_accounts">
+            <column name="disabled" type="bool" defaultValue="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="10" author="Clancey">
+        <addColumn tableName="internal_accounts_invitation">
+            <!-- FIXME: empty default value -->
+            <column name="orgs" type="text" defaultValue="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="11" author="Clancey">
+        <update tableName="internal_accounts_invitation">
+            <column name="orgs" defaultValue="" />
+        </update>
+        <addColumn tableName="internal_accounts_invitation">
+            <column name="email" type="text" defaultValue=""/>
+        </addColumn>
+        <addColumn tableName="internal_accounts">
+            <column name="email" type="text" defaultValue=""/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="12" author="Clancey">
+        <addColumn tableName="internal_accounts">
+            <column name="okta_id" type="text" defaultValue=""/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="13" author="Clancey">
+        <addColumn tableName="internal_accounts_invitation">
+            <column name="okta_id" type="text" defaultValue=""/>
+        </addColumn>
+    </changeSet>
+    
+    <changeSet id="14" author="Clancey">
+        <createTable tableName="groups">
+            <column name="id" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="text"/>
+            <column name="creator" type="text"/>
+            <column name="create_time" type="bigint"/>
+            <column name="status" type="int"/>
+            <column name="message_expiry" type="int"/>
+            <column name="avatar" type="text"/>
+        </createTable>
+
+        <createTable tableName="group_members">
+            <column name="gid" type="text"/>
+            <column name="uid" type="text"/>
+            <column name="role" type="int"/>
+            <column name="create_time" type="bigint"/>
+            <column name="inviter" type="text"/>
+            <column name="display_name" type="text"/>
+            <column name="remark" type="text"/>
+            <column name="notification" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="15" author="Johny">
+        <createTable tableName="group_announcement">
+            <column name="id" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="gid" type="text"/>
+            <column name="creator" type="text"/>
+            <column name="create_time" type="bigint"/>
+            <column name="reviser" type="text"/>
+            <column name="revise_time" type="bigint"/>
+            <column name="status" type="int"/>
+            <column name="announcement_expiry" type="int"/>
+            <column name="content" type="text"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="16" author="Johny">
+        <addColumn tableName="groups">
+            <column name="version" type="int"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="17" author="Johny">
+        <addColumn tableName="groups">
+            <column name="invitation_rule" type="int" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="18" author="Clancey">
+        <createIndex indexName="idx_group_members_gid_uid_unq" tableName="group_members">
+            <column name="gid"/>
+            <column name="uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="19" author="Ian">
+        <createTable tableName="client_versions">
+            <column name="login" type="text" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="number" type="text" />
+            <column name="device" type="text" />
+            <column name="ua" type="text" />
+            <column name="dft_version" type="text" />
+            <column name="os" type="text" />
+            <column name="last_login" type="timestamp"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="20" author="Johny">
+        <addColumn tableName="groups">
+            <column name="last_active_time" type="bigint" />
+        </addColumn>
+    </changeSet>
+    <changeSet id="21" author="Eric">
+        <renameTable oldTableName="internal_groups" newTableName="teams" />
+        <renameTable oldTableName="internal_groups_accounts" newTableName="teams_members" />
+    </changeSet>
+    <changeSet id="22" author="Eric">
+        <addColumn tableName="teams">
+            <column name="id" type="int" autoIncrement="true" />
+            <column name="parent_id" type="int" autoIncrement="true" />
+            <column name="ancestors" type="varchar(100)" />
+            <column name="status" type="bool" defaultValue="false"/>
+            <column name="order_num" type="smallint" />
+            <column name="create_by" type="varchar(50)" />
+            <column name="create_time" type="bigint" defaultValueComputed="extract(epoch from now()) * 1000" />
+        </addColumn>
+        <addColumn tableName="teams_members">
+            <column name="team_id" type="bigint" />
+        </addColumn>
+    </changeSet>
+    <changeSet id="23" author="Eric">
+        <renameColumn tableName="teams_members" oldColumnName="group_name" newColumnName="team_name" />
+    </changeSet>
+    <changeSet id="24" author="Ian">
+        <createTable tableName="bot_properties">
+            <column name="number" type="text" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="auto_answer" type="bool" />
+            <column name="space" type="text" />
+            <column name="answer_server_host" type="text" />
+        </createTable>
+    </changeSet>
+    <changeSet id="25" author="Johny">
+        <addColumn tableName="group_members">
+            <column name="use_global" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="26" author="Johny">
+        <createTable tableName="internal_service_keys">
+            <column name="appid" type="text">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="algorithm" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="key" type="bytea">
+                <constraints nullable="false" />
+            </column>
+            <column name="signature_expire_time" type="bigint">
+                <constraints nullable="false" />
+            </column>
+            <column name="allowed_ip_list" type="json">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="27" author="Johny">
+        <addColumn tableName="internal_accounts">
+            <column name="pid" type="text"/>
+        </addColumn>
+        <addColumn tableName="internal_accounts">
+            <column name="puid" type="text"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="28" author="Eric">
+        <addColumn tableName="teams">
+            <column name="pid" type="text"/>
+            <column name="appid" type="text"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="29" author="Johny">
+        <createTable tableName="platforms">
+            <column name="pid" type="text">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="owner" type="text">
+            </column>
+            <column name="note" type="text">
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="30" author="Johny">
+        <createTable tableName="platform_apps">
+            <column name="appid" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="pid" type="text">
+                <constraints nullable="false" />
+            </column>
+            <column name="note" type="text">
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="31" author="Eric">
+        <createTable tableName="group_pin">
+            <column name="id" type="text">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="gid" type="text"/>
+            <column name="creator" type="text"/>
+            <column name="create_time" type="bigint"/>
+            <column name="status" type="int"/>
+            <column name="content" type="text"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="32" author="Eric">
+        <addColumn tableName="group_pin">
+            <column name="conversation_id" type="text"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="33" author="Johny">
+        <addColumn tableName="internal_accounts">
+            <column name="okta_org" type="text" defaultValue=""/>
+        </addColumn>
+        <addColumn tableName="internal_accounts_invitation">
+            <column name="okta_org" type="text" defaultValue=""/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="34" author="Johny">
+        <createTable tableName="conversations">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="number" type="text"/>
+            <column name="conversation" type="text"/>
+            <column name="last_update_time" type="bigint" />
+            <column name="mute_status" type="int" defaultValue="0"/>
+            <column name="mute_begin_time" type="bigint"/>
+            <column name="mute_end_time" type="bigint"/>
+            <column name="black_status" type="int" defaultValue="0"/>
+            <column name="version" type="int"/>
+        </createTable>
+        <createIndex tableName="conversations" indexName="conversations_number_index">
+            <column name="number"/>
+        </createIndex>
+        <createIndex tableName="conversations" indexName="conversations_conversation_index">
+            <column name="conversation"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="35" author="Eric">
+        <createTable tableName="casbin_rule">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ptype" type="text"/>
+            <column name="v0" type="text"/>
+            <column name="v1" type="text"/>
+            <column name="v2" type="text"/>
+            <column name="v3" type="text"/>
+            <column name="v4" type="text"/>
+            <column name="v5" type="text"/>
+        </createTable>
+    </changeSet>
+    <changeSet id="36" author="Johny">
+        <dropColumn tableName="conversations" columnName="black_status"/>
+        <addColumn tableName="conversations">
+            <column name="block_status" type="text" defaultValue="0"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="37" author="Johny">
+        <createTable tableName="interacts">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="number" type="text"/>
+            <column name="source" type="text"/>
+            <column name="last_update_time" type="bigint" />
+            <column name="type" type="int" defaultValue="0"/>
+            <column name="comment" type="text"/>
+        </createTable>
+        <createIndex tableName="interacts" indexName="interacts_number_source" unique="true">
+            <column name="number"/>
+            <column name="source"/>
+        </createIndex>
+    </changeSet>
+    <changeSet id="39" author="Johny">
+        <createTable tableName="read_receipts">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="source" type="text"/>
+            <column name="source_device" type="integer"/>
+            <column name="conversation" type="text"/>
+            <column name="max_server_timestamp" type="bigint" />
+            <column name="read_at" type="bigint" />
+            <column name="notify_sequence_id" type="bigint"/>
+            <column name="upload_time" type="bigint"/>
+        </createTable>
+        <createIndex tableName="read_receipts" indexName="read_receipts_source_device_index">
+            <column name="source"/>
+            <column name="source_device"/>
+        </createIndex>
+        <createIndex tableName="read_receipts" indexName="read_receipts_conversation_index">
+            <column name="conversation"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="41" author="Johny">
+        <renameColumn tableName="read_receipts" oldColumnName="notify_sequence_id" newColumnName="max_notify_sequence_id"/>
+    </changeSet>
+
+    <changeSet id="42" author="Eric">
+        <addColumn tableName="teams">
+            <column name="remark" type="text"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="43" author="Johny">
+        <addColumn tableName="groups">
+            <column name="remind_cycle" type="text" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="45" author="Johny">
+        <addColumn tableName="internal_accounts">
+            <column name="inactive" type="bool" defaultValue="false"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="47" author="Johny">
+        <addColumn tableName="group_members">
+            <column name="rapid_role" type="int" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="49" author="Johny">
+        <addColumn tableName="groups">
+            <column name="anyone_remove" type="bool" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="50" author="Johny">
+        <addColumn tableName="groups">
+            <column name="rejoin" type="bool" />
+        </addColumn>
+    </changeSet>
+    <changeSet id="51" author="Johny">
+        <addColumn tableName="groups">
+            <column name="ext" type="bool" />
+        </addColumn>
+    </changeSet>
+    <changeSet id="52" author="Johny">
+        <addColumn tableName="internal_accounts">
+            <column name="ext_id" type="bigint" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="53" author="Johny">
+        <addColumn tableName="groups">
+            <column name="publish_rule" type="int" defaultValue="2"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,309 @@
+server:
+  adminMinThreads: 1
+  adminMaxThreads: 640
+  adminContextPath: /
+  applicationContextPath: /
+  maxThreads: 10240
+  applicationConnectors:
+    - type: http
+      port: 55556
+#  adminConnectors:
+#    - type: http
+#      port: 8081
+  gzip:
+    enabled: true
+    bufferSize: 8KiB
+    includedMethods :
+      - GET
+      - POST
+
+logging:
+  level: INFO
+  appenders:
+    - type: file
+      currentLogFilename: /var/log/signalx/signalx-server.log
+      threshold: ALL
+      archive: true
+      archivedLogFilenamePattern: /var/log/signalx/signalx-server-%d{yyyy-MM-dd}-%i.log
+      archivedFileCount: 5
+      timeZone: system
+      logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+      maxFileSize: 1G
+    - type: dump2es
+      threshold: WARN
+
+twilio: # Twilio gateway configuration
+  accountId:
+  accountToken:
+  numbers: # Numbers allocated in Twilio
+    - # First number
+    - # Second number
+    - # Third number
+    - # ...
+    - # Nth number
+  messagingServicesId:
+  localDomain: # Domain Twilio can connect back to for calls. Should be domain of your service.
+
+push:
+  queueSize: 100 # Size of push pending queue
+
+
+#redphone:
+#  authKey: MAQWERtYAaOUyTrRewQaS1dfgHJkLMn # Deprecated
+
+turn: # TURN server configuration
+  secret: # TURN server secret
+  uris:
+    - stun:yourdomain:80
+    - stun:yourdomain.com:443
+    - turn:yourdomain:443?transport=udp
+    - turn:etc.com:80?transport=udp
+
+cache: # Redis server configuration for cache cluster
+  url: "rediss://:redispasswd@redishost1:6379/0"
+  replicaUrls:
+    - "rediss://:redispasswd@replica.redishost1:6379/0"
+
+directory: # Redis server configuration for directory cluster
+  url: "rediss://:redispasswd@redishost1:6379/0"
+  replicaUrls:
+    - "rediss://:redispasswd@replica.redishost1:6379/0"
+
+messageCache: # Redis server configuration for message store cache
+  redis:
+    url: "rediss://:redispasswd@redishost1:6379/0"
+    replicaUrls:
+      - "rediss://:redispasswd@replica.redishost1:6379/0"
+
+pushScheduler: # Redis server configuration for cache cluster
+  url: "rediss://:redispasswd@redishost1:6379/0"
+  replicaUrls:
+    - "rediss://:redispasswd@replica.redishost1:6379/0"
+
+redisSentinel:
+  password: "" # the sentinel will be disabled if the password is empty
+  sentinels:
+    - "127.0.0.1:8552"
+    - "127.0.0.1:8552"
+
+messageStore: # Postgresql database configuration for message store
+  driverClass: org.postgresql.Driver
+  user: "dbusername"
+  password: "db_passwd"
+  url: "jdbc:postgresql://yourdbhost/messagedb"
+
+database: # Postgresql database configuration
+  driverClass: org.postgresql.Driver
+  user: "dbusername"
+  password: "db_passwd"
+  url: "jdbc:postgresql://yourdbhost/accountdb"
+  properties:
+    charSet: UTF-8
+
+
+attachments: # oss configuration
+  endpoint: https://oss.domain.com
+  accessKey: key
+  accessSecret: secret
+  bucket: s3bucketname
+  region: s3region
+
+avatars:
+  endpoint: https://oss.domain.com
+  accessKey: key
+  accessSecret: secret
+  bucket: bucketname
+  region: s3region
+
+profiles: # oss configuration
+  endpoint: https://oss.domain.com
+  accessKey: key
+  accessSecret: secret
+  bucket: bucketname
+  region: s3region
+authorization:
+  pubkey: |
+    -----BEGIN PUBLIC KEY-----
+    pubkey pem
+    -----END PUBLIC KEY-----
+  privkey: |
+    -----BEGIN PRIVATE KEY-----
+    privkey pem
+    -----END PRIVATE KEY-----
+  effectiveDuration: 86400000
+meeting:
+  groupMaxMeetingVersion: 3
+  accMaxMeetingVersion: 3
+  auth:
+    tokenSecret: "secret" 
+
+apn: # Apple Push Notifications configuration
+  Chative:
+    bundleId: yourappbundleID
+    pushCertificate: |
+      -----BEGIN CERTIFICATE-----
+      apn public key
+      -----END CERTIFICATE-----
+    pushKey: |
+      -----BEGIN RSA PRIVATE KEY-----
+      push key private key
+      -----END RSA PRIVATE KEY-----
+    sandbox: false
+
+gcm: # GCM Configuration
+  senderId: 123
+  apiKey: 123
+
+tpn:
+  secretKey: secretKey
+  appId: appID
+  domainUrl: https://tpns.tencent.com/
+  title: Chative
+  defaultContent: You received a message.
+  callContent: You received a CALL.
+
+forcedUpgrade: #Before this version
+  upgradeSwitch: true
+  iOSversion: 2.2.8
+  macVersion: 2.2.22032801
+  androidVersion: 1.0.0
+  linuxVersion: 2.2.22032801
+  androidUserAgentPatternStr: ^Chative/([\d.]+) \(Android ([\d.]+);.*\)
+  iOSUserAgentPatternStr: ^Chative/([\d.]+) \(.*; iOS ([\d.]+); Scale(/[\d.]+)\)
+  macUserAgentPatternStr: ^Chative/([\d.]+) \((?:macOS|Darwin);([\d.]+);.*\)
+  linuxUserAgentPatternStr: ^Chative/([\d.]+) \(Linux;.*\)
+
+group:
+  membersMaxSize: 200
+  defaultInvitationRule: 2
+  defaultMemberNotification: 1
+  effectiveDuration: 186600000000
+  pinMaxSize: 100
+
+esLogger:
+  endPoint: esEndPoint
+  userName: userName
+  password: password
+  myServerIP: 192.168.4.9
+  serviceName: mainServer2
+
+
+
+distributedLock:
+  url: "rediss://:redispasswd@redishost1:6379/15"
+  replicaUrls:
+    - "rediss://:redispasswd@replica.redishost1:6379/15"
+  leaseTime: 10
+
+directoryNotify:
+  ##millis
+  accountBasicInfoChangeTimerLockLeaseTime: 300000
+  ##millis
+  accountBasicInfoChangeTimerDelay: 300000
+  ##millis
+  accountBasicInfoChangeTimerPeriod: 600000
+  sendDirectoryNotify: true
+
+internalTimedTaskConfiguration:
+  messageExpireThreshold: 30
+  groupExpireThreshold: 1
+  deivceExpireThreshold: 60
+  messageRemindBeforeDaysStart: 2
+  messageRemindBeforeDaysEnd: 1
+  emailSubject: |
+   somebody was trying to reach you.
+  emailTemplatate: |
+   email html template
+
+email:
+  server: email-smtp.service.com
+  port: 465
+  username: username
+  password: password
+  from: noreply@e.domain.com
+
+accountManagerConfiguration:
+  algorithm: AES/CBC/PKCS5Padding
+  key: key
+  iv: iv
+  defaultGlobalNotification: 0
+  accountExpireThreshold: 60
+
+kafkaConfiguration:
+  servers: b-3.kafkahosts:9094,b-2.kafkahosts:9094,b-1.kafkahosts:9094
+  valueSerializer: org.apache.kafka.common.serialization.ByteArraySerializer
+  acks: all
+  retries: 3
+  securityProtocol: SSL
+
+
+okta:
+  - domain: domain.okta.com
+    issuer: https://domain.okta.com/oauth2/default
+    clientId: clientid
+    audience: api://default
+    
+cacheCluster:
+  nodes: rediscluster-0001-001.tg4nnl.0001.mec1.cache.amazonaws.com:6379,rediscluster-0001-002.tg4nnl.0001.mec1.cache.amazonaws.com:6379,rediscluster-0002-001.tg4nnl.0001.mec1.cache.amazonaws.com:6379,rediscluster-0002-002.tg4nnl.0001.mec1.cache.amazonaws.com:6379,rediscluster-0003-001.tg4nnl.0001.mec1.cache.amazonaws.com:6379,rediscluster-0003-002.tg4nnl.0001.mec1.cache.amazonaws.com:6379
+  pool:
+    maxTotal: 2000
+    maxIdle: 200
+    minIdle: 20
+    maxWaitMillis: 1000
+
+conversationConfiguration:
+  blockRegex: ^\+2[1-8]\d{3}$|^\+10002$
+  
+casbin:
+  redisHost: redishost1
+  redisPort: 6379
+  redisPassword: redispasswd
+  redisTopic: casbin-topic
+  redisTimeout: 1000
+  redisDatabase: 0
+  redisSsl: true
+  dbDriverClassName: org.postgresql.Driver
+  dbUrl: jdbc:postgresql://yourdbhost/accountdb
+  dbUsername: dbusername
+  dbPassword: db_passwd
+
+voip: # Apple Push Notifications configuration
+  Chative:
+    bundleId: yourappbundleID
+    pushCertificate: |
+      -----BEGIN CERTIFICATE-----
+      viop public key
+      -----END CERTIFICATE-----
+    pushKey: |
+      -----BEGIN RSA PRIVATE KEY-----
+      voip key private key
+      -----END RSA PRIVATE KEY-----
+    sandbox: false
+
+userStatusServerConfiguration:
+  grpcHost: rpc.userstatus.test.internal
+  grpcPort: 9100
+  timeout: 5
+
+
+messageShardDb0: # Postgresql database configuration for messageShard0 store
+  driverClass: org.postgresql.Driver
+  user: "dbusername"
+  password: "db_passwd"
+  url: "jdbc:postgresql://yourdbhost/messagedb"
+
+messageShardDb1: # Postgresql database configuration for messageShard1 store
+  driverClass: org.postgresql.Driver
+  user: "dbusername"
+  password: "db_passwd"
+  url: "jdbc:postgresql://yourdbhost/messagedb1"
+
+messageShardDb2: # Postgresql database configuration for messageShard2 store
+  driverClass: org.postgresql.Driver
+  user: "dbusername"
+  password: "db_passwd"
+  url: "jdbc:postgresql://yourdbhost/messagedb2"
+
+friendServerConfiguration:
+  grpcHost: gosrv.grpc.test.internal
+  grpcPort: 55565

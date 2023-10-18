@@ -1,0 +1,104 @@
+package demo.tool.tpns;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.tencent.xinge.XingeApp;
+import com.tencent.xinge.bean.AudienceType;
+import com.tencent.xinge.bean.Message;
+import com.tencent.xinge.bean.MessageAndroid;
+import com.tencent.xinge.bean.MessageType;
+import com.tencent.xinge.push.app.PushAppRequest;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+
+public class TPNSDemo {
+    public static void main(String[] args) {
+        XingeApp xingeApp = new XingeApp.Builder()
+                .appId("1520011982")
+                .secretKey("cebe8a1c529aa0a7d8b97110bf15c6e4")
+                .domainUrl("https://api.tpns.sgp.tencent.com/")
+                .build();
+
+        final JSONObject jsonObject;
+        try {
+            jsonObject = pushTokenAndroid(xingeApp);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println(jsonObject.toString());
+    }
+
+    public static JSONObject pushTokenAndroid(XingeApp xingeApp) throws JsonProcessingException {
+        PushAppRequest pushAppRequest = new PushAppRequest();
+        pushAppRequest.setAudience_type(AudienceType.token);
+        pushAppRequest.setMessage_type(MessageType.message);
+        Message message = new Message();
+        message.setTitle("Tools");
+        message.setContent("You have a new message.");
+        message.setShowType(1);
+        pushAppRequest.setMessage(message);
+        MessageAndroid messageAndroid = new MessageAndroid();
+        //messageAndroid.setCustom_content(new ObjectMapper().writeValueAsString(
+        //        new CustomData("123", "private","encryptedData")));
+        messageAndroid.setCustom_content("{\n" +
+                "    \"uid\":\"+75898553760\",\n" +
+                "    \"notifytype\":0,\n" +
+                "    \"lockey\":\"PERSONAL_NORMAL\", \n" +
+                "    \"passthrough\": \"{\\\"conversationId\\\" : \\\"+75898553760\\\"}\",\n" +
+                "    \"msg\":\"encrypted message\",\n" +
+                "    \"mutableContent\":1\n" +
+                "}");
+        //messageAndroid.set
+        message.setAndroid(messageAndroid);
+        ArrayList<String> tokenList = new ArrayList();
+        tokenList.add("08efc62e3ad71f7a267286b37a270e7d6ddd");
+        //tokenList.add("09317cf71e716ba6fa1b7405539ecc19de60");
+        //tokenList.add("08adb4b951cc39ded5929640d36aea2f6d59");
+        //tokenList.add("068d33310e66d6fcc223f6fe9ee1d098c919");
+        pushAppRequest.setToken_list(tokenList);
+        return xingeApp.pushApp(pushAppRequest);
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    static public class CustomContent {
+        private String uid;
+        private String callMode;
+
+        public String getEncryptedData() {
+            return encryptedData;
+        }
+
+        public void setEncryptedData(String encryptedData) {
+            this.encryptedData = encryptedData;
+        }
+
+        private String encryptedData;
+
+        public CustomContent(String uid, String callMode, String encryptedData) {
+            this.uid = uid;
+            this.callMode = callMode;
+            this.encryptedData = encryptedData;
+        }
+
+
+        public String getUid() {
+            return uid;
+        }
+
+        public void setUid(String uid) {
+            this.uid = uid;
+        }
+
+        public String getCallMode() {
+            return callMode;
+        }
+
+        public void setCallMode(String callMode) {
+            this.callMode = callMode;
+        }
+
+    }
+
+}
+

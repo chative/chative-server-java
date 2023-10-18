@@ -1,0 +1,18 @@
+package textsecure;
+
+option java_package = "org.whispersystems.textsecuregcm.entities";
+option java_outer_classname = "ConversationMsgInfos";
+import "TextSecure.proto";
+import "ConversationPreview.proto";
+
+message ConversationMsgInfo {
+  optional ConversationId  conversationId  = 1;//会话信息
+  optional ReadPosition    readPosition    = 2;//已读位置，用于计算未读数
+  optional uint32          unreadCorrection = 3;//已读矫正值，用于计算未读数
+  optional Envelope        lastestMsg      = 4;//最新的一条可见消息，用于消息预览
+  repeated Envelope        onePageMsgs     = 5;//null
+  optional uint64          maxOutgoingNsId  =6;//自己发送的可见消息最大NsId，用于计算未读数
+  optional uint64          oldestMsgSId      = 7;//可拉取最老的消息sequenceId，用于拉取消息
+  optional uint64          oldestMsgNsId    = 8;//可拉取最老的消息notifySequenceId，用于拉取消息
+  optional uint64          lastestMsgSId     = 9;//可拉取最新的消息sequenceId，用于拉取消息
+}
