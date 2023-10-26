@@ -46,9 +46,12 @@ public class RateLimitsConfiguration {
   private RateLimitConfiguration prekeys = new RateLimitConfiguration(20, 10.0 / 10.0);
 
   @JsonProperty
-  private RateLimitConfiguration messages = new RateLimitConfiguration(6000, 6000);
+  private RateLimitConfiguration messages = new RateLimitConfiguration(60, 30);
+
   @JsonProperty
-  private RateLimitConfiguration messagesForGroup = new RateLimitConfiguration(1200, 1200);
+  private RateLimitConfiguration readReceipts = new RateLimitConfiguration(60, 30);
+  @JsonProperty
+  private RateLimitConfiguration messagesForGroup = new RateLimitConfiguration(60, 30);
   @JsonProperty
   private RateLimitConfiguration messagesForDestinations = new RateLimitConfiguration(10000, 10000);
 
@@ -89,6 +92,10 @@ public class RateLimitsConfiguration {
 
   public RateLimitConfiguration getMessages() {
     return messages;
+  }
+
+  public RateLimitConfiguration getReadReceipts() {
+    return readReceipts;
   }
 
   public RateLimitConfiguration getPreKeys() {

@@ -44,6 +44,10 @@ public class IncomingMessageList {
     return messages;
   }
 
+  public boolean hasMessages() {
+    return messages != null && messages.size() > 0;
+  }
+
   public String getRelay() {
     return relay;
   }

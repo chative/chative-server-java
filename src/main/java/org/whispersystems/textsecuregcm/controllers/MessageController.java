@@ -111,8 +111,11 @@ public class MessageController {
             throws IOException, RateLimitExceededException {
         boolean isSyncMessage = source.getNumber().equals(destinationName);
 
-        if (!source.getNumber().equals(destinationName)) {
-            rateLimiters.getMessagesLimiter().validate(source.getNumber() + "__" + destinationName);
+        if (!isSyncMessage) {
+            if (messages.hasMessages() && messages.getMessages().get(0).isReadReceipt()){
+                rateLimiters.getReadReceiptsLimiter().validate(source.getNumber() + "__" + destinationName);
+            }else
+                rateLimiters.getMessagesLimiter().validate(source.getNumber() + "__" + destinationName);
         }
         //账号无消息发送权限直接拒绝
         if(source.getAccountMsgHandleType()!=null&&(source.getAccountMsgHandleType()==Account.MsgHandleType.ONLY_RECEIVE.ordinal()||source.getAccountMsgHandleType()==Account.MsgHandleType.NOTHING.ordinal())){
@@ -239,8 +242,11 @@ public class MessageController {
             throws RateLimitExceededException {
         boolean isSyncMessage = source.getNumber().equals(destinationName);
 
-        if (!source.getNumber().equals(destinationName)) {
-            rateLimiters.getMessagesLimiter().validate(source.getNumber() + "__" + destinationName);
+        if (!isSyncMessage) {
+            if (messages.hasMessages() && messages.getMessages().get(0).isReadReceipt()){
+                rateLimiters.getReadReceiptsLimiter().validate(source.getNumber() + "__" + destinationName);
+            }else
+                rateLimiters.getMessagesLimiter().validate(source.getNumber() + "__" + destinationName);
         }
         //账号无消息发送权限直接拒绝
         if(source.getAccountMsgHandleType()!=null&&(source.getAccountMsgHandleType()==Account.MsgHandleType.ONLY_RECEIVE.ordinal()||source.getAccountMsgHandleType()==Account.MsgHandleType.NOTHING.ordinal())){
@@ -426,9 +432,7 @@ public class MessageController {
                                            @PathParam("gid") String gid,
                                            @Valid IncomingMessageList messages)
             throws RateLimitExceededException {
-        if (!source.getNumber().equals(gid)) {
-            rateLimiters.getMessagesForGroupLimiter().validate(source.getNumber() + "__" + gid);
-        }
+        rateLimiters.getMessagesForGroupLimiter().validate(source.getNumber() + "__" + gid);
         //账号无消息发送权限直接拒绝
         if(source.getAccountMsgHandleType()!=null&&(source.getAccountMsgHandleType()==Account.MsgHandleType.ONLY_RECEIVE.ordinal()||source.getAccountMsgHandleType()==Account.MsgHandleType.NOTHING.ordinal())){
             throw new WebApplicationException("NoPermission",Response.status(Statuses.from(430,"NoPermission")).build());
