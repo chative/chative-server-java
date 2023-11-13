@@ -7,9 +7,11 @@ import io.dropwizard.auth.Auth;
 import org.skife.jdbi.v2.exceptions.UnableToExecuteStatementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.whispersystems.textsecuregcm.WhisperServerConfigurationApollo;
 import org.whispersystems.textsecuregcm.distributedlock.DistributedLock;
 import org.whispersystems.textsecuregcm.entities.*;
 import org.whispersystems.textsecuregcm.exceptions.*;
+import org.whispersystems.textsecuregcm.limits.RateLimiters;
 import org.whispersystems.textsecuregcm.storage.*;
 import org.whispersystems.textsecuregcm.util.StringUtil;
 import org.whispersystems.textsecuregcm.util.TokenUtil;
@@ -26,11 +28,13 @@ public class GroupControllerWithTransaction {
 
   private final Logger logger = LoggerFactory.getLogger(GroupControllerWithTransaction.class);
 
+  private final RateLimiters rateLimiters;
   private final AccountsManager accountsManager;
   private final GroupManagerWithTransaction groupManager;
   private final TokenUtil tokenUtil;
 
-  public GroupControllerWithTransaction(AccountsManager accountsManager, GroupManagerWithTransaction groupManager,TokenUtil tokenUtil) {
+  public GroupControllerWithTransaction(RateLimiters rateLimiters, AccountsManager accountsManager, GroupManagerWithTransaction groupManager, TokenUtil tokenUtil) {
+    this.rateLimiters = rateLimiters;
     this.accountsManager = accountsManager;
     this.groupManager = groupManager;
     this.tokenUtil=tokenUtil;
@@ -40,18 +44,30 @@ public class GroupControllerWithTransaction {
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public BaseResponse create(@Auth Account account, @Valid CreateGroupRequest request) {
+  public BaseResponse create(@Auth Account account, @Valid CreateGroupRequest request)
+          throws RateLimitExceededException {
     if(request==null){
      BaseResponse.err(BaseResponse.STATUS.INVALID_PARAMETER, "Invalid param ",logger);
     }
+    rateLimiters.getCreateGroupLimiter().validate(account.getNumber());
     Group group = null;
     List<Account> operatees=new ArrayList<Account>();
     //Set<Long> extIds=new HashSet<>();
     //if(!accountsManager.isBootAccount(account.getNumber())){
     //  extIds.add(account.getExtId());
     //}
+    // check messageExpiry
+    if (request!=null&&request.getMessageExpiry().isPresent()&&!validGroupExpireTime(request.getMessageExpiry().get())) {
+      logger.error("Invalid param messageExpiry, value:{} ", request.getMessageExpiry().get());
+      return new BaseResponse(1, BaseResponse.STATUS.INVALID_PARAMETER.getState(), "Invalid param messageExpiry ",null);
+    }
     // check if accounts exist
     if(request!=null&&request.getNumbers().isPresent()&&request.getNumbers().get().size()>0) {
+      boolean isInContactList = accountsManager.isFriend(account.getNumber(), request.getNumbers().get());
+      if (!isInContactList) {
+        logger.error("accountsManager.isFriend check failed, uid:{}, list: {} ", account.getNumber(), request.getNumbers().get());
+        return new BaseResponse(1, BaseResponse.STATUS.INVALID_PARAMETER.getState(), "No such account ", null);
+      }
       for (String uid : request.getNumbers().get()) {
         Account operatee = getAccount(uid);
         if (null == operatee) {
@@ -315,6 +331,11 @@ public class GroupControllerWithTransaction {
         }else if(request.getMessageExpiry().isPresent()&&group.getMessageExpiry()!=request.getMessageExpiry().get()){
           display=GroupNotify.Display.YES.ordinal();
           notifyDetailedType= GroupNotify.GroupNotifyDetailedType.GROUP_MSG_EXPIRY_CHANGE.ordinal();
+          if (!validGroupExpireTime(request.getMessageExpiry().get())) {
+            //BaseResponse.err(BaseResponse.STATUS.INVALID_PARAMETER, "Invalid param messageExpiry ",logger);
+            logger.error("Invalid param messageExpiry, value:{} ", request.getMessageExpiry().get());
+            return new BaseResponse(1, BaseResponse.STATUS.INVALID_PARAMETER.getState(), "Invalid param messageExpiry ",null);
+          }
           group.setMessageExpiry(request.getMessageExpiry().get());
         }else if(request.getInvitationRule().isPresent()&&group.getInvitationRule()!=request.getInvitationRule().get()&&GroupMembersTable.ROLE.fromOrdinal(request.getInvitationRule().get())!=null){
           display=GroupNotify.Display.NO.ordinal();
@@ -1145,6 +1166,14 @@ public class GroupControllerWithTransaction {
     return account.get();
   }
 
+  private boolean validGroupExpireTime(long expireTime) {
+    for (Long opt : WhisperServerConfigurationApollo.getGroupMessageExpiry()) {
+      if (opt == expireTime) {
+        return true;
+      }
+    }
+    return false;
+  }
   private boolean groupInfoIsChange(Group group,SetGroupRequest request){
     if(request.getName().isPresent()) {
       if (!request.getName().get().equals(group.getName())){

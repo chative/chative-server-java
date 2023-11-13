@@ -8,6 +8,7 @@ import com.ctrip.framework.apollo.model.ConfigChangeEvent;
 import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.whispersystems.textsecuregcm.configuration.RateLimitsConfiguration;
 import org.whispersystems.textsecuregcm.storage.Account;
 
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class WhisperServerConfigurationApollo{
   private static String ACC_MAX_MSG_ENC_VERSION = "accMaxMsgEncVersion";
   private static String V3_MESSAGE_SUPPORT = "v3MessageSupport";
 
+  private static String GROUP_MESSAGE_EXPIRY = "groupMessageExpiry";
+
   private JsonArray emailDomains;
   private JsonObject extConfig;
   private long verificationCodeFailureCount;
@@ -35,6 +38,19 @@ public class WhisperServerConfigurationApollo{
   private String verificationCodeTemplate;
   private long verificationCodeSendInterval;
   private String chativeInvitationPerDay;
+
+  public RateLimitConfigurationList getRateLimitConfigurationList() {
+    return rateLimitConfigurationList;
+  }
+
+  private  RateLimitConfigurationList rateLimitConfigurationList = new RateLimitConfigurationList();
+
+  private static Long[] groupMessageExpiry = new Long[]{3600L,
+          172800L,
+          604800L,
+          2592000L,
+          7776000L};
+
 
   public Integer getMaxMsgEncVersion() {
     return maxMsgEncVersion;
@@ -45,6 +61,7 @@ public class WhisperServerConfigurationApollo{
 
   WhisperServerConfigurationApollo(){
     Config config = ConfigService.getAppConfig();
+    parseLimitConfig(config);
     String emailDomainStr = config.getProperty(EMAIL_DOMAIN_KEY, "");
     emailDomains = new Gson().fromJson(emailDomainStr, JsonArray.class);
     String extConfigStr = config.getProperty(EXT_CONFIG_KEY, "");
@@ -57,6 +74,8 @@ public class WhisperServerConfigurationApollo{
     chativeInvitationPerDay = config.getProperty(CHATIVE_INVITATION_PER_DAY, "10");
     maxMsgEncVersion = config.getIntProperty(ACC_MAX_MSG_ENC_VERSION, 255);
     v3MessageSupport = parseString2map(config.getProperty(V3_MESSAGE_SUPPORT, "[\"all\"]"));
+
+    groupMessageExpiry = new Gson().fromJson(config.getProperty(GROUP_MESSAGE_EXPIRY, "[-1,3600,172800,604800,2592000,7776000]"), Long[].class);
 
     config.addChangeListener(new ConfigChangeListener() {
       @Override
@@ -95,11 +114,26 @@ public class WhisperServerConfigurationApollo{
             if (change.getPropertyName().equals(V3_MESSAGE_SUPPORT)) {
                 v3MessageSupport = parseString2map(change.getNewValue());
             }
+            if (change.getPropertyName().equals(GROUP_MESSAGE_EXPIRY)) {
+              if (change.getNewValue() != null)
+                groupMessageExpiry = new Gson().fromJson(change.getNewValue(), Long[].class);
+            }
         }
       }
     });
   }
 
+  private void parseLimitConfig(Config config){
+    rateLimitConfigurationList.createGroup = new Gson().fromJson(
+            config.getProperty("rateLimit.createGroup", "{\n" +
+                    "    \"bucketSize\":60,\n" +
+                    "    \"leakRatePerMinute\":1\n" +
+                    "}"), RateLimitsConfiguration.RateLimitConfiguration.class);
+            //new RateLimitsConfiguration.RateLimitConfiguration(
+            //config.getIntProperty("rateLimit.createGroup.bucketSize", 60),
+            //config.getDoubleProperty("rateLimit.createGroup.leakRatePerMinute", 30));
+
+  }
   public JsonArray getEmailDomains() {
     return emailDomains;
   }
@@ -170,6 +204,20 @@ public class WhisperServerConfigurationApollo{
     }
     return map;
   }
+
+
+  public static Long[] getGroupMessageExpiry() {
+    return groupMessageExpiry;
+  }
+
+  public static class RateLimitConfigurationList {
+    public RateLimitsConfiguration.RateLimitConfiguration getCreateGroup() {
+      return createGroup;
+    }
+
+    RateLimitsConfiguration.RateLimitConfiguration createGroup;
+  }
+
 
   public static void main(String[] args) {
     System.out.println("hello world");

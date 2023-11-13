@@ -17,8 +17,8 @@
 package org.whispersystems.textsecuregcm.limits;
 
 
+import org.whispersystems.textsecuregcm.WhisperServerConfigurationApollo;
 import org.whispersystems.textsecuregcm.configuration.RateLimitsConfiguration;
-import org.whispersystems.textsecuregcm.controllers.RateLimitExceededException;
 import org.whispersystems.textsecuregcm.storage.MemCache;
 
 public class RateLimiters {
@@ -33,6 +33,7 @@ public class RateLimiters {
   private final RateLimiter contactsLimiter;
   private final RateLimiter preKeysLimiter;
   private final RateLimiter messagesLimiter;
+  private final RateLimiter readReceiptsLimiter;
   private final RateLimiter messagesForGroupLimiter;
   private final RateLimiter messagesForDestinationsLimiter;
 
@@ -51,9 +52,14 @@ public class RateLimiters {
 
   private final RateLimiter authorizationLimiter;
   private final RateLimiter createAccountLimiter;
+
+  private final RateLimiter createGroupLimiter;
+
   private final MemCache memCache;
 
-  public RateLimiters(RateLimitsConfiguration config, MemCache cacheClient) {
+  public RateLimiters(RateLimitsConfiguration config,
+                      WhisperServerConfigurationApollo.RateLimitConfigurationList rateLimitConfigurationList,
+           MemCache cacheClient) {
     this.memCache=cacheClient;
     this.smsDestinationLimiter = new RateLimiter(cacheClient, "smsDestination",
                                                  config.getSmsDestination().getBucketSize(),
@@ -86,6 +92,10 @@ public class RateLimiters {
     this.preKeysLimiter = new RateLimiter(cacheClient, "prekeys",
                                           config.getPreKeys().getBucketSize(),
                                           config.getPreKeys().getLeakRatePerMinute());
+
+    this.readReceiptsLimiter = new RateLimiter(cacheClient, "readReceipts",
+            config.getReadReceipts().getBucketSize(),
+            config.getReadReceipts().getLeakRatePerMinute());
 
     this.messagesLimiter = new RateLimiter(cacheClient, "messages",
                                            config.getMessages().getBucketSize(),
@@ -136,6 +146,11 @@ public class RateLimiters {
             "createAccount",
             config.getCreateAccount().getBucketSize(),
             config.getCreateAccount().getLeakRatePerMinute());
+
+    this.createGroupLimiter = new RateLimiter(cacheClient,
+            "createGroup",
+            rateLimitConfigurationList.getCreateGroup().getBucketSize(),
+            rateLimitConfigurationList.getCreateGroup().getLeakRatePerMinute());
   }
 
   public RateLimiter getAllocateDeviceLimiter() {
@@ -148,6 +163,10 @@ public class RateLimiters {
 
   public RateLimiter getMessagesLimiter() {
     return messagesLimiter;
+  }
+
+  public RateLimiter getReadReceiptsLimiter() {
+    return readReceiptsLimiter;
   }
 
   public RateLimiter getPreKeysLimiter() {
@@ -216,6 +235,10 @@ public class RateLimiters {
 
   public RateLimiter getMessagesForDestinationsLimiter() {
     return messagesForDestinationsLimiter;
+  }
+
+  public RateLimiter getCreateGroupLimiter() {
+    return createGroupLimiter;
   }
 
   public RateLimiter getCustomizeLimiter(String name,int bucketSize, double leakRatePerMinute){

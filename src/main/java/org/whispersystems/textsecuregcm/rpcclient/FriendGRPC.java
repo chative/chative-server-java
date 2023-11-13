@@ -43,6 +43,17 @@ public class FriendGRPC {
         return response.getExist();
     }
 
+    public boolean isFriend(String uid, List<String> list) {
+        final IsFriendResponse friendRes = friendBlockingStub.isFriend(IsFriendRequest.newBuilder().setUid(uid).addAllCheckList(list).build());
+        final BaseResponse base = friendRes.getBase();
+        logger.info("isFriend response.status:{},uid:{},list:{}",base.getStatus(), uid, list);
+        if (base.getStatus() != 0){
+            logger.error("isFriend return status:{},reason:{}", base.getStatus(), base.getReason());
+            return false;
+        }
+        return true;
+    }
+
     public void addFriend(String inviter,String invitee){
         final AddRequest addRequest = AddRequest.newBuilder().setInviter(inviter).setInvitee(invitee).build();
         final AddResponse addResponse = friendBlockingStub.add(addRequest);

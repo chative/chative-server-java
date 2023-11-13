@@ -958,6 +958,14 @@ public abstract class AccountsManager {
     public AccountStringLookup getAccountStringLookup(){
         return new AccountStringLookup();
     }
+
+    public boolean isFriend(String uid, List<String> list) {
+        if (list == null || list.size() == 0) {
+            return false;
+        }
+        return friendGRPC.isFriend(uid, list);
+    }
+
     public class AccountStringLookup implements StringLookup {
         @Override
         public String lookup(String number) {

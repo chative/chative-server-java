@@ -264,7 +264,8 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     WebsocketSender            websocketSender            = new WebsocketSender(messagesManager, pubSubManager,memCache);
     AccountAuthenticator       deviceAuthenticator        = new AccountAuthenticator(accountsManager);
     FederatedPeerAuthenticator federatedPeerAuthenticator = new FederatedPeerAuthenticator(config.getFederationConfiguration());
-    RateLimiters               rateLimiters               = new RateLimiters(config.getLimitsConfiguration(), memCache);
+    RateLimiters               rateLimiters               = new RateLimiters(config.getLimitsConfiguration(),
+            apolloConfig.getRateLimitConfigurationList(), memCache);
     IPAllowList                ipAllowList                = new IPAllowList();
     ProducerKafka              producerKafka              = new ProducerKafka(config.getKafkaConfiguration());
     KafkaSender                kafkaSender                = new KafkaSender(accountsManager,messagesManager,producerKafka,memCache);
@@ -340,7 +341,7 @@ public class WhisperServerService extends Application<WhisperServerConfiguration
     groupManagerWithTransaction.setGroupMaxMeetingVersion(config.getMeeting().getGroupMaxMeetingVersion());
 //    groupManagerWithTransaction.setTeamsManager(teamsManager);
     accountsManager.setGroupManager(groupManagerWithTransaction);
-    GroupControllerWithTransaction groupControllerWithTransaction=new GroupControllerWithTransaction(accountsManager,groupManagerWithTransaction,tokenUtil);
+    GroupControllerWithTransaction groupControllerWithTransaction=new GroupControllerWithTransaction(rateLimiters,accountsManager,groupManagerWithTransaction,tokenUtil);
 
     // edit by guolilei
 //    MessageController    messageController    = new MessageController(rateLimiters, pushSender, receiptSender, accountsManager, messagesManager, federatedClientManager/*, apnFallbackManager*/);
