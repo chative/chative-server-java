@@ -197,7 +197,7 @@ public class FederatedClient {
     TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("X509");
     trustManagerFactory.init(initializeTrustStore(peer.getName(), peer.getCertificate()));
 
-    SSLContext sslContext = SSLContext.getInstance("TLS");
+    SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
     sslContext.init(null, trustManagerFactory.getTrustManagers(), new SecureRandom());
 
     SSLConnectionSocketFactory        sslConnectionSocketFactory = new SSLConnectionSocketFactory(sslContext, new DefaultHostnameVerifier());

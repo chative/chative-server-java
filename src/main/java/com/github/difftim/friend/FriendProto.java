@@ -59,6 +59,16 @@ public final class FriendProto {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_pb_HowToMetResponse_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_pb_IsFriendRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_pb_IsFriendRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_pb_IsFriendResponse_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_pb_IsFriendResponse_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -82,13 +92,17 @@ public final class FriendProto {
       "lang\030\003 \001(\t\022\027\n\017sourceQueryType\030\004 \001(\t\"U\n\020H" +
       "owToMetResponse\022\036\n\004base\030\001 \001(\0132\020.pb.BaseR" +
       "esponse\022\020\n\010describe\030\002 \003(\t\022\017\n\007findyou\030\003 \003" +
-      "(\t2\300\001\n\006Friend\022&\n\003Add\022\016.pb.AddRequest\032\017.p" +
-      "b.AddResponse\022)\n\004List\022\017.pb.ListRequest\032\020" +
-      ".pb.ListResponse\022,\n\005Exist\022\020.pb.ExistRequ" +
-      "est\032\021.pb.ExistResponse\0225\n\010HowToMet\022\023.pb." +
-      "HowToMetRequest\032\024.pb.HowToMetResponseB0\n" +
-      "\031com.github.difftim.friendB\013FriendProtoP" +
-      "\001Z\004./pbb\006proto3"
+      "(\t\"1\n\017IsFriendRequest\022\013\n\003uid\030\001 \001(\t\022\021\n\tch" +
+      "eckList\030\002 \003(\t\"2\n\020IsFriendResponse\022\036\n\004bas" +
+      "e\030\001 \001(\0132\020.pb.BaseResponse2\367\001\n\006Friend\022&\n\003" +
+      "Add\022\016.pb.AddRequest\032\017.pb.AddResponse\022)\n\004" +
+      "List\022\017.pb.ListRequest\032\020.pb.ListResponse\022" +
+      ",\n\005Exist\022\020.pb.ExistRequest\032\021.pb.ExistRes" +
+      "ponse\0225\n\010HowToMet\022\023.pb.HowToMetRequest\032\024" +
+      ".pb.HowToMetResponse\0225\n\010IsFriend\022\023.pb.Is" +
+      "FriendRequest\032\024.pb.IsFriendResponseB0\n\031c" +
+      "om.github.difftim.friendB\013FriendProtoP\001Z" +
+      "\004./pbb\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -149,6 +163,18 @@ public final class FriendProto {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_pb_HowToMetResponse_descriptor,
         new java.lang.String[] { "Base", "Describe", "Findyou", });
+    internal_static_pb_IsFriendRequest_descriptor =
+      getDescriptor().getMessageTypes().get(9);
+    internal_static_pb_IsFriendRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_pb_IsFriendRequest_descriptor,
+        new java.lang.String[] { "Uid", "CheckList", });
+    internal_static_pb_IsFriendResponse_descriptor =
+      getDescriptor().getMessageTypes().get(10);
+    internal_static_pb_IsFriendResponse_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_pb_IsFriendResponse_descriptor,
+        new java.lang.String[] { "Base", });
     com.github.difftim.common.CommonProto.getDescriptor();
   }
 
